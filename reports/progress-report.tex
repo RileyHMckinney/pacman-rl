@@ -13,10 +13,10 @@
 
 \begin{document}
 
-\title{Reinforcement Learning for Game Playing: Pac-Man Environment}
+\title{Reinforcement Learning for Game Playing: Multi-Agent Pac-Man Environment}
 
 \author{\IEEEauthorblockN{Riley McKinney, Nathan Dow, Zain Karim}
-\IEEEauthorblockA{\textit{CS 4375.001 -- Introduction to Machine Learning} \\
+\IEEEauthorblockA{\textit{Department of Computer Science} \\
 \textit{University of Texas at Dallas}\\
 Richardson, TX, USA}
 }
@@ -24,16 +24,16 @@ Richardson, TX, USA}
 \maketitle
 
 \begin{abstract}
-This project proposes a reinforcement learning system for autonomous game playing using a custom Pac-Man environment. The goal is to train an agent to maximize its reward by learning optimal navigation strategies to collect pellets while avoiding an adversarial ghost. A tabular Q-Learning approach will first be implemented, followed by potential extensions into Deep Q-Networks (DQN) using PyTorch for scalable state representation. The project will evaluate agent performance based on cumulative rewards and convergence behavior across multiple training episodes.
+This project investigates reinforcement learning for multi-agent game environments through a custom Pac-Man simulation. The goal is to develop both a hider (runner) and a seeker agent, each trained independently with distinct reward functions under the same Q-Learning framework. The project will begin with a 10$\times$10 grid containing randomly placed pellets and a single seeker, later progressing toward maze-based environments with multiple seekers and variable movement limits. Performance will be evaluated by tracking reward convergence, learning stability, and emergent pursuit-evasion behaviors.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Reinforcement Learning, Q-Learning, Game AI, Pac-Man, Machine Learning
+Reinforcement Learning, Q-Learning, Multi-Agent Systems, Game AI, Pac-Man
 \end{IEEEkeywords}
 
 \section{Project Topic}
 The proposed topic is \textbf{Reinforcement Learning for Game Playing}.  
-A simplified Pac-Man grid environment will serve as the testbed for developing and analyzing reinforcement learning algorithms. The environment will simulate the classical pursuit-evasion problem, where the Pac-Man agent learns to collect pellets while avoiding a chasing ghost.
+A custom Pac-Man environment will serve as the foundation for studying multi-agent reinforcement learning, where agents pursue conflicting goals: the runner aims to survive and collect pellets, while the seeker aims to catch the runner as efficiently as possible.
 
 \section{Team Members}
 This project will be conducted by \textbf{Riley McKinney, Nathan Dow, and Zain Karim}.
@@ -43,41 +43,51 @@ The planned technique is \textbf{Q-Learning}, a model-free reinforcement learnin
 \begin{equation}
 Q(s,a) \leftarrow Q(s,a) + \alpha [r + \gamma \max_{a'} Q(s',a') - Q(s,a)]
 \end{equation}
-The agent will follow an $\epsilon$-greedy policy to balance exploration and exploitation.  
-After verifying the basic Q-Learning setup, the project may extend to a \textbf{Deep Q-Network (DQN)} implemented with PyTorch to handle larger or more complex state spaces.
-
-\section{Dataset / Environment Details}
-This project will not rely on a static dataset. Instead, a \textbf{procedurally generated environment} will serve as the data source for learning:  
+Both the runner and seeker will use this algorithm but will be trained on separate reward functions.  
 \begin{itemize}
-    \item \textbf{Environment:} 10$\times$10 grid world with five randomly placed pellets.  
-    \item \textbf{Agents:} Pac-Man (runner) and Ghost (seeker).  
-    \item \textbf{State Space:} Encoded as discrete position pairs for both agents, yielding $10{,}000$ total states.  
-    \item \textbf{Actions:} Four possible moves (up, down, left, right).  
-    \item \textbf{Reward Function:} $+1$ for eating a pellet, $+20$ for clearing all pellets, $-10$ for being caught, and $-0.01$ per time step.  
+    \item \textbf{Runner Reward:} Encourages pellet collection and avoidance of seekers.  
+    \item \textbf{Seeker Reward:} Rewards successful capture and penalizes inefficient pursuit.  
 \end{itemize}
-Each episode will start with randomized pellet locations to encourage diverse exploration and learning stability.
+Each agent will maintain its own Q-table and policy while interacting within the same environment.
+
+\section{Environment Details}
+The current environment is a 10$\times$10 open grid with five randomly placed pellets and a single seeker. Agents can move up, down, left, or right.  
+Rewards are currently defined as:  
+\begin{itemize}
+    \item \textbf{Runner (Pac-Man):} +1 per pellet, +20 for clearing all pellets, −10 if caught, −0.01 step cost.  
+    \item \textbf{Seeker (Ghost):} +10 for catching the runner, −0.01 step cost.  
+\end{itemize}
+Future iterations will introduce maze-like structures or collections of mazes, walls to constrain movement, and multiple seekers coordinating in pursuit. The maximum number of allowed steps per episode (move cap) will be increased to accommodate the added complexity.
 
 \section{Coding Language / Tools}
 \begin{itemize}
     \item \textbf{Language:} Python 3
-    \item \textbf{Libraries:} NumPy, Matplotlib, PyGame (for visualization), and PyTorch (for future DQN work)
-    \item \textbf{Planned Modules:}
+    \item \textbf{Libraries:} NumPy, Matplotlib, PyGame, and PyTorch (for future DQN extension)
+    \item \textbf{Modules:}
     \begin{itemize}
-        \item \texttt{environment.py} — Defines the Pac-Man grid and environment logic.  
-        \item \texttt{agent.py} — Implements Q-Learning update and policy functions.  
-        \item \texttt{main.py} — Training loop and episodic simulation.  
-        \item \texttt{utils.py} — Plotting reward curves and logging results.  
+        \item \texttt{environment.py} — Grid world logic, reward computation, and PyGame rendering. 
+        \item \texttt{agent.py} — Q-Learning algorithm and action policy.  
+        \item \texttt{main.py} — Simulation loop and future training integration.  
+        \item \texttt{utils.py} — Reward visualization and logging utilities.  
     \end{itemize}
 \end{itemize}
 
+\section{Preliminary Results}
+Early random-action simulations confirm that the environment updates, scoring logic, and rendering are stable. Pac-Man collects pellets correctly, the seeker detects collisions, and reward signals behave as expected.  
+A baseline test of 100 random episodes showed the runner achieving an average cumulative reward of approximately \textbf{-6.3}, validating the negative bias of the current environment before learning.  
+Visualization through PyGame confirms proper step-by-step rendering of agent movements and score updates, providing a reliable platform for introducing learning agents in the next phase.
+
 \section{Expected Results}
-The project aims to demonstrate the ability of a Q-Learning agent to improve cumulative rewards over successive episodes, showing evidence of learned strategies.  
+Upcoming work will involve training both agents independently using Q-Learning and observing emergent pursuit and evasion strategies.  
 Expected outcomes include:
 \begin{itemize}
-    \item A working RL simulation environment with interactive visualization.  
-    \item Reward convergence curves plotted across episodes.  
-    \item A trained policy where Pac-Man efficiently collects pellets and avoids the ghost.  
+    \item Converging Q-values for both agents under opposing objectives.  
+    \item Improved survival time and efficiency for the runner agent.  
+    \item Coordinated multi-seeker pursuit behavior in maze configurations.  
 \end{itemize}
+
+\section*{Acknowledgment}
+The authors thank the course instructor for guidance and the University of Texas at Dallas for providing the project framework and computing resources.
 
 \begin{thebibliography}{00}
 \bibitem{watkins1992}
