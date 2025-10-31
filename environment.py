@@ -107,7 +107,7 @@ class PacmanEnvironment:
         # === Time Limit ===
         if self.step_count >= self.max_steps:
             done = True
-            print("⌛ Time limit reached.")
+            print("Time limit reached.")
 
         rewards = {"pacman": reward_pacman, "ghost": reward_ghost}
         return self.grid, rewards, done
