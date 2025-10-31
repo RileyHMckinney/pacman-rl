@@ -42,11 +42,16 @@ class PacmanEnvironment:
     # -------------------------------------------------------------------------
     def move_agent(self, pos, action):
         """Move an agent according to an action while staying inside bounds."""
-        # action: 0 = up, 1 = down, 2 = left, 3 = right
         deltas = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         dr, dc = deltas[action]
+
         new_r = min(max(pos[0] + dr, 0), self.grid_size - 1)
         new_c = min(max(pos[1] + dc, 0), self.grid_size - 1)
+
+        # If it's a wall, don't move (the agent wastes a step)
+        if self.grid[new_r, new_c] == 1:
+            return pos
+
         return [new_r, new_c]
 
     # -------------------------------------------------------------------------
