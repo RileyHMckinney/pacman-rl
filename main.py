@@ -1,15 +1,23 @@
-"""
-main.py
-Entry point for running the Pac-Man RL simulation or training loop.
-"""
-
 from environment import PacmanEnvironment
-from agent import QLearningAgent
+import numpy as np, time
 
 def main():
-    print("🚀 Pac-Man Reinforcement Learning Project Initialized")
     env = PacmanEnvironment(grid_size=10)
-    print(f"Environment initialized with grid size: {env.grid_size}")
+    done = False
+    total_p, total_g = 0.0, 0.0
+
+    while not done:
+        pacman_action = np.random.randint(0, 4)
+        ghost_action  = np.random.randint(0, 4)
+
+        state, rewards, done = env.step(pacman_action, ghost_action)
+        total_p += rewards['pacman']
+        total_g += rewards['ghost']
+
+        env.render()
+        print(f"Step reward -> P:{rewards['pacman']:.2f}  G:{rewards['ghost']:.2f}")
+        print(f"Episode total -> P:{total_p:.2f}  G:{total_g:.2f}\n")
+        time.sleep(0.3)
 
 if __name__ == "__main__":
     main()
