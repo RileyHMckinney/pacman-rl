@@ -13,12 +13,22 @@ class PacmanEnvironment:
         self.grid_size = grid_size
         self.max_steps = max_steps
         self.step_count = 0
+
+        # --- Added attributes for IDE / type safety ---
+        self.runner_score = 0.0  # Pac-Man cumulative score
+        self.seeker_score = 0.0  # Ghost cumulative score
+        # ------------------------------------------------
+
         self.reset()
 
     # -------------------------------------------------------------------------
     def reset(self):
         """Reset positions, initialize grid and place pellets."""
         self.grid = np.zeros((self.grid_size, self.grid_size), dtype=int)
+
+        # Reset scores when a new episode starts
+        self.runner_score = 0.0
+        self.seeker_score = 0.0
 
         # Place Pac-Man (3)
         self.pacman_pos = [1, 1]
@@ -88,13 +98,13 @@ class PacmanEnvironment:
             reward_pacman -= 10
             reward_ghost += 10
             done = True
-            print("Pac-Man was caught!")
+            print("💀 Pac-Man was caught!")
 
         # === Pac-Man Wins (all pellets eaten) ===
         elif self.pellet_count == 0:
             reward_pacman += 20
             done = True
-            print("Pac-Man cleared all pellets!")
+            print("🏆 Pac-Man cleared all pellets!")
 
         # === Step Penalty ===
         reward_pacman -= 0.01
@@ -112,7 +122,7 @@ class PacmanEnvironment:
         # === Time Limit ===
         if self.step_count >= self.max_steps:
             done = True
-            print("Time limit reached.")
+            print("⌛ Time limit reached.")
 
         rewards = {"pacman": reward_pacman, "ghost": reward_ghost}
         return self.grid, rewards, done
@@ -123,59 +133,97 @@ class PacmanEnvironment:
         symbols = {0: "·", 1: "█", 2: "•", 3: "P", 4: "☠", 5: "☠"}  # 5 = ghost on pellet
         for row in self.grid:
             print(" ".join(symbols.get(cell, "?") for cell in row))
-        print(f"Pellets remaining: {self.pellet_count}")
-        print()
-
-        # restore hidden pellets
-        self.grid[self.grid == 5] = 2
+        print(f"Pellets remaining: {self.pellet_count}\n")
+        self.grid[self.grid == 5] = 2  # restore hidden pellets
 
     # -------------------------------------------------------------------------
     def render_pygame(self, cell_size=50):
-        """Render the environment visually using Pygame."""
-        pygame.init()
-        window_size = (self.grid_size * cell_size, self.grid_size * cell_size)
-        screen = pygame.display.set_mode(window_size)
-        pygame.display.set_caption("Pac-Man RL Visualization")
+        """Render the environment with a minimal HUD: Seeker (left) | Runner (right)."""
+        HUD_H = 60
+        win_w, win_h = self.grid_size * cell_size, self.grid_size * cell_size + HUD_H
 
-        # Colors (R, G, B)
+        # One-time init / handle resize
+        if not hasattr(self, "_pg_init") or not getattr(self, "_pg_init", False) \
+        or not hasattr(self, "_screen") or self._screen.get_size() != (win_w, win_h):
+            pygame.init()
+            self._screen = pygame.display.set_mode((win_w, win_h))
+            pygame.display.set_caption("Pac-Man RL Visualization")
+            self._font = pygame.font.SysFont("consolas", 28, bold=True)
+            self._clock = pygame.time.Clock()
+            self._pg_init = True
+
+        screen = self._screen
+
+        # Colors
         COLORS = {
-            0: (20, 20, 20),      # empty - dark gray
-            1: (70, 70, 70),      # wall (future use)
-            2: (255, 165, 0),     # pellet - yellow
-            3: (255, 215, 0),     # Pac-Man - gold
-            4: (255, 50, 50),     # Ghost - red
-            5: (255, 50, 50)      # Ghost on pellet (same red)
+            0: (20, 20, 20),        # empty
+            1: (70, 70, 70),        # wall (future)
+            2: (255, 255, 100),     # pellet
+            3: (255, 180, 0),       # Pac-Man
+            4: (255, 50, 50),       # Ghost
+            5: (255, 50, 50)        # Ghost on pellet
         }
 
-        # Draw all grid cells
+        # --- Draw playfield ---
+        screen.fill((10, 10, 10))
+        grid_h = self.grid_size * cell_size
+
         for r in range(self.grid_size):
             for c in range(self.grid_size):
-                rect = pygame.Rect(c * cell_size, r * cell_size, cell_size, cell_size)
-                color = COLORS.get(self.grid[r, c], (255, 255, 255))
-                pygame.draw.rect(screen, color, rect)
+                val = self.grid[r, c]
 
-                # Pellet indicator (small circle)
-                if self.grid[r, c] == 2:
+                if val == 2:  # pellet
                     center = (c * cell_size + cell_size // 2, r * cell_size + cell_size // 2)
-                    pygame.draw.circle(screen, (255, 255, 0), center, cell_size // 6)
+                    pygame.draw.circle(screen, COLORS[2], center, cell_size // 8)
 
-                # Pac-Man circle
-                if self.grid[r, c] == 3:
+                elif val == 3:  # Pac-Man
                     center = (c * cell_size + cell_size // 2, r * cell_size + cell_size // 2)
-                    pygame.draw.circle(screen, (255, 215, 0), center, cell_size // 2 - 4)
+                    pygame.draw.circle(screen, COLORS[3], center, cell_size // 2 - 3)
+                    # mouth wedge
+                    pygame.draw.polygon(
+                        screen, (10, 10, 10),
+                        [
+                            center,
+                            (center[0] + cell_size // 3, center[1] - cell_size // 4),
+                            (center[0] + cell_size // 3, center[1] + cell_size // 4)
+                        ]
+                    )
 
-                # Ghost square
-                if self.grid[r, c] in [4, 5]:
-                    rect_inset = pygame.Rect(c * cell_size + 6, r * cell_size + 6,
-                                             cell_size - 12, cell_size - 12)
-                    pygame.draw.rect(screen, (255, 50, 50), rect_inset, border_radius=8)
+                elif val in [4, 5]:  # Ghost
+                    rect_inset = pygame.Rect(
+                        c * cell_size + 6, r * cell_size + 6,
+                        cell_size - 12, cell_size - 12
+                    )
+                    pygame.draw.rect(screen, COLORS[val], rect_inset, border_radius=8)
 
+        # Grid lines
+        for i in range(self.grid_size + 1):
+            pygame.draw.line(screen, (40, 40, 40), (0, i * cell_size), (win_w, i * cell_size))
+            pygame.draw.line(screen, (40, 40, 40), (i * cell_size, 0), (i * cell_size, grid_h))
+
+        # --- HUD (no step counter) ---
+        hud_rect = pygame.Rect(0, grid_h, win_w, HUD_H)
+        pygame.draw.rect(screen, (12, 12, 12), hud_rect)
+        pygame.draw.line(screen, (35, 35, 35), (0, grid_h), (win_w, grid_h), 2)
+
+        font = self._font
+        y = grid_h + (HUD_H - font.get_height()) // 2
+        pad = 18
+
+        # Left: Seeker
+        seeker_text = font.render(f"Seeker: {self.seeker_score:.2f}", True, (255, 120, 120))
+        screen.blit(seeker_text, (pad, y))
+
+        # Right: Runner
+        runner_text = font.render(f"Runner: {self.runner_score:.2f}", True, (255, 215, 50))
+        screen.blit(runner_text, (win_w - runner_text.get_width() - pad, y))
+
+        # Present
         pygame.display.flip()
-        pygame.time.wait(100)  # short delay to slow down updates
+        self._clock.tick(12)
 
-        # Allow window to close gracefully
+        # Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                exit()
-        # -------------------------------------------------------------------------
+                raise SystemExit
