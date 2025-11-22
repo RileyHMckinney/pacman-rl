@@ -10,7 +10,6 @@ class ReplayBuffer:
         self.position = 0
 
     def store(self, state, action, reward, next_state, done):
-        """Stores one transition in the buffer."""
         transition = (state, action, reward, next_state, done)
 
         if len(self.buffer) < self.capacity:
@@ -21,14 +20,11 @@ class ReplayBuffer:
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size):
-        """Samples a minibatch."""
         if len(self.buffer) < batch_size:
             return None
 
         batch = random.sample(self.buffer, batch_size)
-
         states, actions, rewards, next_states, dones = map(np.array, zip(*batch))
-
         return states, actions, rewards, next_states, dones
 
     def size(self):
