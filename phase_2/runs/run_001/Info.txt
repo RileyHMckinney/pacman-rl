@@ -1,0 +1,1 @@
+I was updating the epsilon 10s of times per episode, instead of once per episode, resulting it in falling off too fast.
