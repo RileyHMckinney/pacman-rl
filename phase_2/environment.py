@@ -4,9 +4,11 @@ import numpy as np
 class PacmanEnvironment:
     """
     Phase 2 environment:
-    - Static 10x10 maze WITH WALLS
+    - Static 10x10 maze WITH WALLS (movement restricted)
+    - Pellets spawn randomly each episode (non-wall)
     - Pac-Man collects pellets
     - Ghost chases Pac-Man
+    - NOTE: State vector must stay identical to Phase 1 for model compatibility.
     """
 
     EMPTY = 0
@@ -20,7 +22,7 @@ class PacmanEnvironment:
         self.max_steps = max_steps
         self.action_space = 4  # up, down, left, right
 
-        # --- Your maze converted from ASCII ---
+        # === STATIC MAZE ===
         self.maze = np.array([
             [0,0,0,0,0,0,1,0,0,0],
             [0,1,0,1,1,0,1,0,1,1],
@@ -31,10 +33,11 @@ class PacmanEnvironment:
             [0,1,1,1,1,0,1,1,1,0],
             [0,0,0,0,1,0,1,0,0,0],
             [1,1,1,0,1,0,1,0,1,0],
-            [0,0,0,0,0,0,0,0,1,0]
+            [0,0,0,0,0,0,0,0,1,0],
         ])
 
-        # One-hot grid encoding shape
+        # EXACT SAME SHAPE AS PHASE 1:
+        #   grid_size * grid_size * 3 + 4
         self.state_size = self.grid_size * self.grid_size * 3 + 4
 
         self.reset()
@@ -43,19 +46,20 @@ class PacmanEnvironment:
     def reset(self):
         self.step_count = 0
 
-        # Start with a copy of the maze
+        # grid starts as the maze (but we do NOT encode walls in state)
         self.grid = self.maze.copy()
 
-        # Place random pellets in open tiles
-        open_tiles = np.argwhere(self.grid == self.EMPTY)
-        pellet_count = 5
-        pellet_positions = open_tiles[np.random.choice(
-            len(open_tiles), size=pellet_count, replace=False
-        )]
-        for r, c in pellet_positions:
+        # ---- RANDOM PELLET PLACEMENT (non-wall cells) ----
+        open_tiles = [(r, c) for r in range(self.grid_size)
+                              for c in range(self.grid_size)
+                              if self.maze[r, c] == self.EMPTY]
+
+        pellet_positions = np.random.choice(len(open_tiles), size=5, replace=False)
+        for idx in pellet_positions:
+            r, c = open_tiles[idx]
             self.grid[r, c] = self.PELLET
 
-        # Spawn positions (Option 1)
+        # ---- FIXED SPAWNS ----
         self.pacman_pos = [0, 0]
         self.ghost_pos  = [9, 9]
 
@@ -63,7 +67,15 @@ class PacmanEnvironment:
 
     # ---------------------------------------------------------
     def get_state_vector(self):
-        """One-hot layers: pellets / pacman / ghost + normalized positions"""
+        """
+        One-hot encode only:
+        - pellets
+        - pacman
+        - ghost
+
+        DO NOT encode walls! (To stay compatible with Phase 1 DQN model)
+        """
+
         grid_features = np.zeros((self.grid_size, self.grid_size, 3))
 
         # pellet layer
@@ -77,6 +89,7 @@ class PacmanEnvironment:
 
         flat = grid_features.flatten()
 
+        # normalized positions
         extra = np.array([
             self.pacman_pos[0] / self.grid_size,
             self.pacman_pos[1] / self.grid_size,
@@ -88,19 +101,18 @@ class PacmanEnvironment:
 
     # ---------------------------------------------------------
     def move(self, pos, action):
-        """Move only if not a wall."""
         deltas = [(-1,0), (1,0), (0,-1), (0,1)]
         dr, dc = deltas[action]
 
         r = pos[0] + dr
         c = pos[1] + dc
 
-        # stay in bounds
+        # out of bounds
         if r < 0 or r >= self.grid_size or c < 0 or c >= self.grid_size:
             return pos
 
-        # cannot walk into walls
-        if self.grid[r, c] == self.WALL:
+        # blocked by wall
+        if self.maze[r, c] == self.WALL:
             return pos
 
         return [r, c]
@@ -110,36 +122,36 @@ class PacmanEnvironment:
         self.step_count += 1
         done = False
 
-        reward_pac = -0.01
-        reward_ghost = -0.01
+        reward_p = -0.01
+        reward_g = -0.01
 
-        # Move Pac-Man
+        # move pacman
         self.pacman_pos = self.move(self.pacman_pos, pacman_action)
 
-        # Pellet eaten
+        # pellet eaten
         if self.grid[self.pacman_pos[0], self.pacman_pos[1]] == self.PELLET:
-            reward_pac += 1
+            reward_p += 1
             self.grid[self.pacman_pos[0], self.pacman_pos[1]] = self.EMPTY
 
-        # Move Ghost
+        # move ghost
         self.ghost_pos = self.move(self.ghost_pos, ghost_action)
 
-        # Collision
+        # collision
         if self.pacman_pos == self.ghost_pos:
-            reward_pac -= 10
-            reward_ghost += 10
+            reward_p -= 10
+            reward_g += 10
             done = True
 
-        # All pellets collected
+        # all pellets gone
         if not (self.grid == self.PELLET).any():
-            reward_pac += 20
+            reward_p += 20
             done = True
 
-        # Time done
+        # time limit
         if self.step_count >= self.max_steps:
             done = True
 
         return self.get_state_vector(), {
-            "pacman": reward_pac,
-            "ghost": reward_ghost
+            "pacman": reward_p,
+            "ghost": reward_g
         }, done
