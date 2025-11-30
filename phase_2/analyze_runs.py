@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # ==========================================================
 # CONFIG — where all runs live
 # ==========================================================
-RUNS_DIR = r"C:\Users\User\Desktop\ML\ML Project\phase_2\runs"
+RUNS_DIR = os.path.join(os.path.dirname(__file__), "runs")
 
 
 # ==========================================================

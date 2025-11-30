@@ -5,36 +5,35 @@ import os
 # ============================================================
 
 EPISODES = 10000
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 UPDATE_REPEAT = 4
-TARGET_UPDATE_EP = 10
+TARGET_UPDATE_EP = 25
 
 # ============================================================
 # Epsilon Settings
 # ============================================================
 
 EPSILON_START = 1.0
-EPSILON_MIN = 0.10
-EPSILON_DECAY = 0.99993
-
+EPSILON_MIN   = 0.05
+EPSILON_DECAY = 0.9995
 # ============================================================
 # Environment Settings
 # ============================================================
 
 MAX_STEPS = 600                 # maze takes longer than open grid
-PELLETS_PER_EPISODE = 15
-GHOST_VISION_RADIUS = 3
+PELLETS_PER_EPISODE = 10
+GHOST_VISION_RADIUS = 2
 
 # ============================================================
 # Reward Shaping
 # ============================================================
 
-STEP_PENALTY = -0.02
-PELLET_REWARD = 5.0
-CLEAR_REWARD = 25.0
-DISTANCE_WEIGHT = 0.25
-CATCH_PENALTY = -10.0
-CATCH_REWARD = 10.0
+STEP_PENALTY    = -0.05
+PELLET_REWARD   = 5.0
+CLEAR_REWARD    = 25.0
+DISTANCE_WEIGHT = 0.50
+CATCH_PENALTY   = -10.0
+CATCH_REWARD    = 10.0
 
 # ============================================================
 # Logging / Run Folder System
