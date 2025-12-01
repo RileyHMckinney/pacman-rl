@@ -1,11 +1,18 @@
 import os
 import csv
 import torch
+import psutil  # ADD THIS
 
 import config
 from environment import PacmanEnvironment
 from dqn_agent import DQNAgent
 from replay_buffer import ReplayBuffer
+
+# ======== ADD ONLY THIS OPTIMIZATION ========
+# Use all 6 physical cores
+torch.set_num_threads(psutil.cpu_count(logical=False))
+print(f"Using {psutil.cpu_count(logical=False)} CPU cores")
+# ======== END OPTIMIZATION ========
 
 # ---------------------------------------------------------
 # Create run folder

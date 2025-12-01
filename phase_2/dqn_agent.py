@@ -62,11 +62,18 @@ class DQNAgent:
 
         states, actions, rewards, next_states, dones = batch
 
-        states      = torch.tensor(states, dtype=torch.float32).to(self.device)
-        actions     = torch.tensor(actions).long().to(self.device)
-        rewards     = torch.tensor(rewards, dtype=torch.float32).to(self.device)
-        next_states = torch.tensor(next_states, dtype=torch.float32).to(self.device)
-        dones       = torch.tensor(dones, dtype=torch.float32).to(self.device)
+        # states, next_states likely lists of arrays -> make 2D float32 arrays
+        states      = torch.from_numpy(np.asarray(states, dtype=np.float32)).to(self.device)
+        next_states = torch.from_numpy(np.asarray(next_states, dtype=np.float32)).to(self.device)
+
+        # actions likely a list of numpy.int64 scalars -> cast to Python int then long
+        actions     = torch.tensor([int(a) for a in actions], dtype=torch.long, device=self.device)
+
+        # rewards -> float32
+        rewards     = torch.tensor([float(r) for r in rewards], dtype=torch.float32, device=self.device)
+
+        # dones -> bool (or uint8) then .float() later if needed
+        dones       = torch.tensor([bool(d) for d in dones], dtype=torch.bool, device=self.device)
 
         # Q(s, a)
         q_values = self.model(states).gather(1, actions.unsqueeze(1)).squeeze()
@@ -74,7 +81,8 @@ class DQNAgent:
         # Target Q values using target network
         with torch.no_grad():
             next_q = self.target(next_states).max(1)[0]
-            target_q = rewards + (1 - dones) * self.gamma * next_q
+            not_done = (~dones).float()
+            target_q = rewards + not_done * self.gamma * next_q
 
         loss = self.loss_fn(q_values, target_q)
 
