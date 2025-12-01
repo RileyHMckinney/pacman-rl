@@ -193,3 +193,67 @@ class PacmanEnvironment:
         pac_obs = self.get_observation("pacman")
         gh_obs = self.get_observation("ghost")
         return pac_obs, gh_obs, {"pacman": rp, "ghost": rg}, done
+
+    # ---------------------------------------------------------------------
+
+    def render_pygame(self, cell_size=48):
+        """Lightweight Pygame renderer for the current grid state."""
+        # Lazy import + single init
+        if not hasattr(self, "_pg"):
+            import pygame
+            self._pg = pygame
+            self._pg.init()
+            self._screen = self._pg.display.set_mode(
+                (self.grid_size * cell_size, self.grid_size * cell_size)
+            )
+            self._clock = self._pg.time.Clock()
+
+        pg = self._pg
+        screen = self._screen
+
+        # Basic event pump so window stays responsive
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+
+        # Colors
+        BLACK  = (10, 10, 10)
+        WALL   = (80, 80, 90)
+        EMPTY  = (25, 25, 30)
+        PELLET = (240, 210, 60)
+        PAC    = (70, 170, 255)
+        GHOST  = (240, 80, 80)
+
+        screen.fill(BLACK)
+
+        # Draw tiles
+        for r in range(self.grid_size):
+            for c in range(self.grid_size):
+                x = c * cell_size
+                y = r * cell_size
+
+                # Base tile
+                color = EMPTY if self.maze[r, c] == self.EMPTY else WALL
+                pg.draw.rect(screen, color, (x, y, cell_size, cell_size))
+
+                # Pellet
+                if self.pellets[r, c] == 1 and self.maze[r, c] == self.EMPTY:
+                    cx, cy = x + cell_size // 2, y + cell_size // 2
+                    pg.draw.circle(screen, PELLET, (cx, cy), max(3, cell_size // 8))
+
+        # Pac-Man
+        pr, pc = self.pacman_pos
+        px = pc * cell_size + cell_size // 2
+        py = pr * cell_size + cell_size // 2
+        pg.draw.circle(screen, PAC, (px, py), cell_size // 3)
+
+        # Ghost
+        gr, gc = self.ghost_pos
+        gx = gc * cell_size + cell_size // 2
+        gy = gr * cell_size + cell_size // 2
+        pg.draw.circle(screen, GHOST, (gx, gy), cell_size // 3)
+
+        pg.display.flip()
+        # ~50 FPS cap (adjust if desired)
+        if hasattr(self, "_clock"):
+            self._clock.tick(50)
