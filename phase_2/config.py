@@ -25,10 +25,10 @@ EPSILON_DECAY = 0.9995    # was 0.99993; this reaches useful exploitation sooner
 # Environment Settings
 # ============================================================
 
-MAX_STEPS = 400
+MAX_STEPS = 600
 # MAX_STEPS = 600                 # keep for maze complexity (use 400 for faster tests)
 PELLETS_PER_EPISODE = 15
-GHOST_VISION_RADIUS = 3
+GHOST_VISION_RADIUS = 2
 
 # ============================================================
 # Reward Shaping (clearer signals)
@@ -36,10 +36,10 @@ GHOST_VISION_RADIUS = 3
 
 STEP_PENALTY   = -0.05          # stronger anti-stall pressure
 PELLET_REWARD  = 5.0
-CLEAR_REWARD   = 25.0
+CLEAR_REWARD   = 75.0
 DISTANCE_WEIGHT = 0.5           # was 0.25; improves pursuit/evasion shaping
-CATCH_PENALTY  = -10.0
-CATCH_REWARD   = 10.0
+CATCH_PENALTY  = -20.0
+CATCH_REWARD   = 75.0
 
 # ============================================================
 # Logging / Run Folder System
