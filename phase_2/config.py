@@ -4,7 +4,7 @@ import os
 # Training Hyperparameters (tuned for CPU on 2018 MBP)
 # ============================================================
 
-EPISODES = 2000
+EPISODES = 10000
 # EPISODES = 10000          # use 1500–2500 for quick tests; 10k for final runs
 BATCH_SIZE = 128          # smaller than 256 for smoother CPU training
 UPDATE_REPEAT = 2
